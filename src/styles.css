@@ -1,15 +1,49 @@
-.title {
-  font-family: sans-serif;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:is(html, body, #root) {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.layout {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1.5rem;
+  background: hsl(0, 0%, 16%);
+  color: white;
   text-align: center;
 }
 
-.component_container {
-  position: relative;
+.add-button {
+  appearance: none;
+  font: inherit;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 0;
+  margin-top: 1rem;
+  background: hsl(0, 0%, 8%);
+  color: white;
+  cursor: pointer;
 }
 
-.main {
-  display: grid;
-  gap: 1em;
+.container {
+  background: hsl(0, 0%, 8%);
+  padding: 2rem;
+}
+
+.viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed hsl(0, 0%, 50%);
 }
 
 .button {

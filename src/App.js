@@ -1,13 +1,26 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import Moveable from "react-moveable";
+
+async function getImage() {
+  const response = await fetch("https://jsonplaceholder.typicode.com/photos");
+  const data = await response.json();
+  const size = data.length;
+  const random = Math.floor(Math.random() * size);
+  return data[random].url;
+}
 
 const App = () => {
   const [moveableComponents, setMoveableComponents] = useState([]);
   const [selected, setSelected] = useState(null);
+  console.log(moveableComponents);
 
-  const addMoveable = () => {
+  const addMoveable = async () => {
     // Create a new moveable component and add it to the array
     const COLORS = ["red", "blue", "yellow", "green", "purple"];
+    const FITS = ["contain", "cover", "auto"];
+
+    const image = await getImage();
+    const fit = FITS[Math.floor(Math.random() * FITS.length)];
 
     setMoveableComponents([
       ...moveableComponents,
@@ -18,7 +31,9 @@ const App = () => {
         width: 100,
         height: 100,
         color: COLORS[Math.floor(Math.random() * COLORS.length)],
-        updateEnd: true
+        image,
+        fit,
+        updateEnd: true,
       },
     ]);
   };
@@ -54,29 +69,36 @@ const App = () => {
     }
   };
 
+  const onRemove = (id) => {
+    const updatedMoveables = moveableComponents.filter(
+      (moveable) => moveable.id !== id
+    );
+    setMoveableComponents(updatedMoveables);
+  };
+
   return (
-    <main style={{ height : "100vh", width: "100vw" }}>
-      <button onClick={addMoveable}>Add Moveable1</button>
-      <div
-        id="parent"
-        style={{
-          position: "relative",
-          background: "black",
-          height: "80vh",
-          width: "80vw",
-        }}
-      >
-        {moveableComponents.map((item, index) => (
-          <Component
-            {...item}
-            key={index}
-            updateMoveable={updateMoveable}
-            handleResizeStart={handleResizeStart}
-            setSelected={setSelected}
-            isSelected={selected === item.id}
-          />
-        ))}
-      </div>
+    <main className="layout">
+      <header>
+        <h1>Challenge Kosmos React JS</h1>
+        <button className="add-button" onClick={addMoveable}>
+          Add Moveable
+        </button>
+      </header>
+      <section className="container">
+        <div id="parent" className="viewer">
+          {moveableComponents.map((item, index) => (
+            <Component
+              {...item}
+              key={index}
+              onRemove={onRemove}
+              updateMoveable={updateMoveable}
+              handleResizeStart={handleResizeStart}
+              setSelected={setSelected}
+              isSelected={selected === item.id}
+            />
+          ))}
+        </div>
+      </section>
     </main>
   );
 };
@@ -95,6 +117,9 @@ const Component = ({
   setSelected,
   isSelected = false,
   updateEnd,
+  image,
+  fit,
+  onRemove,
 }) => {
   const ref = useRef();
 
@@ -110,7 +135,7 @@ const Component = ({
 
   let parent = document.getElementById("parent");
   let parentBounds = parent?.getBoundingClientRect();
-  
+
   const onResize = async (e) => {
     // ACTUALIZAR ALTO Y ANCHO
     let newWidth = e.width;
@@ -130,9 +155,12 @@ const Component = ({
       width: newWidth,
       height: newHeight,
       color,
+      image,
+      fit,
     });
 
     // ACTUALIZAR NODO REFERENCIA
+
     const beforeTranslate = e.drag.beforeTranslate;
 
     ref.current.style.width = `${e.width}px`;
@@ -164,21 +192,16 @@ const Component = ({
     if (positionMaxLeft > parentBounds?.width)
       newWidth = parentBounds?.width - left;
 
-    const { lastEvent } = e;
-    const { drag } = lastEvent;
-    const { beforeTranslate } = drag;
-
-    const absoluteTop = top + beforeTranslate[1];
-    const absoluteLeft = left + beforeTranslate[0];
-
     updateMoveable(
       id,
       {
-        top: absoluteTop,
-        left: absoluteLeft,
+        top: ref.current.offsetTop,
+        left: ref.current.offsetLeft,
         width: newWidth,
         height: newHeight,
         color,
+        image,
+        fit,
       },
       true
     );
@@ -196,7 +219,10 @@ const Component = ({
           left: left,
           width: width,
           height: height,
-          background: color,
+          backgroundColor: color,
+          backgroundImage: `url(${image})`,
+          backgroundSize: fit,
+          backgroundPosition: "center",
         }}
         onClick={() => setSelected(id)}
       />
@@ -212,6 +238,8 @@ const Component = ({
             width,
             height,
             color,
+            image,
+            fit,
           });
         }}
         onResize={onResize}
@@ -223,7 +251,40 @@ const Component = ({
         zoom={1}
         origin={false}
         padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+        bounds={{
+          left: parent.clientLeft,
+          top: parent.clientTop,
+          right: parent.offsetWidth,
+          bottom: parent.offsetHeight,
+        }}
+        snappable={true}
+        ables={[Removeable]}
+        removeable={true}
+        props={{
+          onRemove,
+          id,
+        }}
       />
     </>
   );
+};
+
+const Removeable = {
+  name: "removeable",
+  render(moveable) {
+    const { pos2 } = moveable.state;
+    const { onRemove, id } = moveable.props;
+    return (
+      <div
+        key="removeable-wrapper"
+        style={{
+          transform: `translate(${pos2[0]}px, ${pos2[1]}px) translate(10px)`,
+        }}
+      >
+        <button className="button" onClick={() => onRemove(id)}>
+          ❌
+        </button>
+      </div>
+    );
+  },
 };
